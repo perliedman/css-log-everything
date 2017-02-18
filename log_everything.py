@@ -1,6 +1,5 @@
+import sqlite3
 from events import Event
-from players.entity import Player
-from players.helpers import index_from_userid
 from messages import SayText2
 from collections import defaultdict
 import json
@@ -14,8 +13,6 @@ class LogEverythingPlugin(object):
         self.teams = defaultdict(list)
         self._round_start = None
 
-    @Event('player_connect')
-    @Event('player_connect_client')
     def on_player_connect(self, event):
         user_id = event['userid']
         self.users[user_id] = {
@@ -23,12 +20,10 @@ class LogEverythingPlugin(object):
             'name': event['name']
         }
 
-    @Event('player_disconnect')
     def on_player_disconnect(self, event):
         user_id = event['userid']
         del self.users[user_id]
 
-    @Event('player_team')
     def on_player_team(self, event):
         user_id = event['userid']
         old_team_id = event['oldteam']
@@ -40,11 +35,9 @@ class LogEverythingPlugin(object):
             new_team_id = event['team']
             self.teams[new_team_id] = user_id
 
-    @Event('round_start')
     def on_round_start(self, _):
         self._round_start = datetime.now()
 
-    @Event('round_end')
     def on_round_end(self, event):
         def team_to_json(team):
             return json.dumps([team])
@@ -60,8 +53,33 @@ class LogEverythingPlugin(object):
                         team_to_json(win_team), team_to_json(lose_team)))
 
 if __name__ == '__main__':
-    import sqlite3
     PLUGIN = None
+
+    @Event('player_connect')
+    @Event('player_connect_client')
+    def on_player_connect(event):
+        global PLUGIN
+        PLUGIN.on_player_connect(event)
+
+    @Event('player_disconnect')
+    def on_player_disconnect(event):
+        global PLUGIN
+        PLUGIN.on_player_disconnect(event)
+
+    @Event('player_team')
+    def on_player_team(event):
+        global PLUGIN
+        PLUGIN.on_player_team(event)
+
+    @Event('round_start')
+    def on_round_start(_):
+        global PLUGIN
+        PLUGIN.on_round_start(_)
+
+    @Event('round_end')
+    def on_round_end(event):
+        global PLUGIN
+        PLUGIN.on_round_end(event)
 
     def load():
         connection = sqlite3.connect('log-everything.sqlite3')
