@@ -15,7 +15,7 @@ class LogEverythingPlugin(object):
         self._round_start = None
 
         for player in list(PlayerIter('all')):
-            print player
+            print(player)
             self.teams[player.team] = player.userid
 
 
