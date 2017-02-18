@@ -52,40 +52,39 @@ class LogEverythingPlugin(object):
                        (self._round_start, datetime.now(),
                         team_to_json(win_team), team_to_json(lose_team)))
 
-if __name__ == '__main__':
+PLUGIN = None
+
+@Event('player_connect')
+@Event('player_connect_client')
+def on_player_connect(event):
+    global PLUGIN
+    PLUGIN.on_player_connect(event)
+
+@Event('player_disconnect')
+def on_player_disconnect(event):
+    global PLUGIN
+    PLUGIN.on_player_disconnect(event)
+
+@Event('player_team')
+def on_player_team(event):
+    global PLUGIN
+    PLUGIN.on_player_team(event)
+
+@Event('round_start')
+def on_round_start(_):
+    global PLUGIN
+    PLUGIN.on_round_start(_)
+
+@Event('round_end')
+def on_round_end(event):
+    global PLUGIN
+    PLUGIN.on_round_end(event)
+
+def load():
+    connection = sqlite3.connect('log-everything.sqlite3')
+    PLUGIN = LogEverythingPlugin(connection)
+    SayText2('Log Everything plugin loaded.').send()
+
+def unload():
     PLUGIN = None
-
-    @Event('player_connect')
-    @Event('player_connect_client')
-    def on_player_connect(event):
-        global PLUGIN
-        PLUGIN.on_player_connect(event)
-
-    @Event('player_disconnect')
-    def on_player_disconnect(event):
-        global PLUGIN
-        PLUGIN.on_player_disconnect(event)
-
-    @Event('player_team')
-    def on_player_team(event):
-        global PLUGIN
-        PLUGIN.on_player_team(event)
-
-    @Event('round_start')
-    def on_round_start(_):
-        global PLUGIN
-        PLUGIN.on_round_start(_)
-
-    @Event('round_end')
-    def on_round_end(event):
-        global PLUGIN
-        PLUGIN.on_round_end(event)
-
-    def load():
-        connection = sqlite3.connect('log-everything.sqlite3')
-        PLUGIN = LogEverythingPlugin(connection)
-        SayText2('Log Everything plugin loaded.').send()
-
-    def unload():
-        PLUGIN = None
-        SayText2('Log Everything plugin unloaded').send()
+    SayText2('Log Everything plugin unloaded').send()
