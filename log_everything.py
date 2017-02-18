@@ -17,7 +17,7 @@ class LogEverythingPlugin(object):
         for player in list(PlayerIter('all')):
             user_id = player.userid
             self.users[user_id] = {
-                'steam_id': player.networkid,
+                'steam_id': player.steamid,
                 'name': player.name
             }
             self.teams[player.team].append(user_id)
