@@ -57,6 +57,7 @@ class LogEverythingPlugin(object):
             insert into rounds (starttime, endtime, win_team, lose_team) values (?, ?, ?, ?)""",
                        (self._round_start, datetime.now(),
                         team_to_json(win_team), team_to_json(lose_team)))
+        self.connection.commit()
 
 def ensure_up_to_date(connection):
     cursor = connection.cursor()
