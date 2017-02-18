@@ -16,7 +16,7 @@ class LogEverythingPlugin(object):
 
         for player in list(PlayerIter('all')):
             print(player)
-            self.teams[player.team] = player.userid
+            self.teams[player.team].append(player.userid)
 
 
     def on_player_connect(self, event):
@@ -39,7 +39,7 @@ class LogEverythingPlugin(object):
 
         if not event['disconnect']:
             new_team_id = event['team']
-            self.teams[new_team_id] = user_id
+            self.teams[new_team_id].append(user_id)
 
     def on_round_start(self, _):
         self._round_start = datetime.now()
