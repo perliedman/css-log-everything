@@ -2,7 +2,7 @@ from events import Event
 from players.entity import Player
 from players.helpers import index_from_userid
 from messages import SayText2
-from collectoins import defaultdict
+from collections import defaultdict
 import json
 from datetime import datetime
 
