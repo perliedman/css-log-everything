@@ -4,7 +4,9 @@ from messages import SayText2
 from collections import defaultdict
 import json
 from datetime import datetime
-
+from filters.players import PlayerIter
+from players.entity import PlayerEntity
+from helpers import playerinfo_from_edict
 
 class LogEverythingPlugin(object):
     def __init__(self, connection):
@@ -12,6 +14,13 @@ class LogEverythingPlugin(object):
         self.users = {}
         self.teams = defaultdict(list)
         self._round_start = None
+
+        for player_index, player_edict in PlayerIter("all"):
+            player_info = playerinfo_from_edict(player_edict)
+            team = player_info.get_team_index()
+
+            self.teams[team] = player_info.get_userid()
+
 
     def on_player_connect(self, event):
         user_id = event['userid']
