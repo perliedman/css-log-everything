@@ -5,7 +5,7 @@ from collections import defaultdict
 import json
 from datetime import datetime
 from filters.players import PlayerIter
-from helpers import playerinfo_from_edict
+from players.helpers import playerinfo_from_edict
 
 class LogEverythingPlugin(object):
     def __init__(self, connection):
