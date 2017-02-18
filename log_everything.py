@@ -54,9 +54,15 @@ class LogEverythingPlugin(object):
         win_team = self.teams[winner]
         lose_team = [team for (team_number, team) in self.teams.items() if team_number != winner][0]
         cursor.execute("""
-            insert into rounds (round_start, round_end, win_team, lose_team) values (?, ?, ?, ?)""",
+            insert into rounds (starttime, endtime, win_team, lose_team) values (?, ?, ?, ?)""",
                        (self._round_start, datetime.now(),
                         team_to_json(win_team), team_to_json(lose_team)))
+
+def ensure_up_to_date(connection):
+    cursor = connection.cursor()
+    cursor.execute("""
+        create table if not exists rounds (starttime datetime, endtime datetime, win_team text, lose_team text)
+        """)
 
 PLUGIN = None
 
@@ -89,6 +95,7 @@ def on_round_end(event):
 def load():
     global PLUGIN
     connection = sqlite3.connect('log-everything.sqlite3')
+    ensure_up_to_date(connection)
     PLUGIN = LogEverythingPlugin(connection)
     SayText2('Log Everything plugin loaded.').send()
 
