@@ -81,10 +81,12 @@ def on_round_end(event):
     PLUGIN.on_round_end(event)
 
 def load():
+    global PLUGIN
     connection = sqlite3.connect('log-everything.sqlite3')
     PLUGIN = LogEverythingPlugin(connection)
     SayText2('Log Everything plugin loaded.').send()
 
 def unload():
+    global PLUGIN
     PLUGIN = None
     SayText2('Log Everything plugin unloaded').send()
