@@ -15,8 +15,12 @@ class LogEverythingPlugin(object):
         self._round_start = None
 
         for player in list(PlayerIter('all')):
-            print(player)
-            self.teams[player.team].append(player.userid)
+            user_id = player.userid
+            self.users[user_id] = {
+                'steam_id': player.networkid,
+                'name': player.name
+            }
+            self.teams[player.team].append(user_id)
 
 
     def on_player_connect(self, event):
@@ -49,7 +53,7 @@ class LogEverythingPlugin(object):
 
     def on_round_end(self, event):
         def team_to_json(team):
-            return json.dumps(team)
+            return json.dumps([self.users[user_id]['steam_id'] for user_id in team])
 
         cursor = self.connection.cursor()
 
