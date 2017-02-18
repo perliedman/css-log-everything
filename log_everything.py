@@ -14,11 +14,9 @@ class LogEverythingPlugin(object):
         self.teams = defaultdict(list)
         self._round_start = None
 
-        for player_index, player_edict in PlayerIter("all"):
-            player_info = playerinfo_from_edict(player_edict)
-            team = player_info.get_team_index()
-
-            self.teams[team] = player_info.get_userid()
+        for player in list(PlayerIter('all')):
+            print player
+            self.teams[player.team] = player.userid
 
 
     def on_player_connect(self, event):
