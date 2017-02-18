@@ -49,7 +49,7 @@ class LogEverythingPlugin(object):
 
     def on_round_end(self, event):
         def team_to_json(team):
-            return json.dumps([team])
+            return json.dumps(team)
 
         cursor = self.connection.cursor()
 
