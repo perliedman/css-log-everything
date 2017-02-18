@@ -35,7 +35,10 @@ class LogEverythingPlugin(object):
         old_team_id = event['oldteam']
         if old_team_id in self.teams:
             team = self.teams[old_team_id]
-            team.remove(user_id)
+            try:
+                team.remove(user_id)
+            except ValueError:
+                pass
 
         if not event['disconnect']:
             new_team_id = event['team']
