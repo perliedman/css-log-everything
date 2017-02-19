@@ -5,13 +5,14 @@ from collections import defaultdict
 import json
 from datetime import datetime
 from filters.players import PlayerIter
+from pprint import pprint
 
 class LogEverythingPlugin(object):
     def __init__(self, connection):
         self.connection = connection
         self.users = {}
         self.teams = defaultdict(list)
-        self._round_start = None
+        self._round_id = None
 
     def add_player(self, user_id, steam_id, name):
         self.users[user_id] = {
@@ -45,7 +46,11 @@ class LogEverythingPlugin(object):
         self.teams[new_team_id].append(user_id)
 
     def start_round(self):
-        self._round_start = datetime.now()
+        cursor = self.connection.cursor()
+        cursor.execute("""
+            insert into rounds (starttime) values (?)""",
+                       (datetime.now(),))
+        self._round_id = cursor.lastrowid
 
     def end_round(self, winner_team_id):
         def team_to_json(team):
@@ -54,14 +59,26 @@ class LogEverythingPlugin(object):
         cursor = self.connection.cursor()
 
         # If it's a draw, winner_team_id will be something weird
-        if winner_team_id in self.teams:
+        if winner_team_id in self.teams and self._round_id:
             win_team = self.teams[winner_team_id]
             lose_team = [team for (team_number, team) in self.teams.items() \
                 if team_number != winner_team_id][0]
             cursor.execute("""
-                insert into rounds (starttime, endtime, win_team, lose_team) values (?, ?, ?, ?)""",
-                           (self._round_start, datetime.now(),
-                            team_to_json(win_team), team_to_json(lose_team)))
+                update rounds set endtime=?, win_team=?, lose_team=? where id=?""",
+                           (datetime.now(), team_to_json(win_team), team_to_json(lose_team),
+                            self._round_id))
+            self.connection.commit()
+
+            self._round_id = None
+
+    def add_event(self, event_type, data, subject=None, indirect=None):
+        if self._round_id:
+            cursor = self.connection.cursor()
+            cursor.execute("""
+                insert into events (round_id, time, type, data, subject_id, indirect_id)
+                """, (self._round_id, datetime.now(), event_type, json.dumps(data),
+                      self.users[subject] if subject else None,
+                      self.users[indirect] if indirect else None))
             self.connection.commit()
 
 def ensure_up_to_date(connection):
@@ -70,14 +87,24 @@ def ensure_up_to_date(connection):
         create table if not exists rounds (
             id integer primary key autoincrement,
             starttime datetime,
-            endtime datetime,
-            win_team text,
-            lose_team text)
+            endtime datetime null,
+            win_team text null,
+            lose_team text null)
         """)
     cursor.execute("""
         create table if not exists players (
             steam_id varchar(16) primary key,
             name varchar(32))
+        """)
+    cursor.execute("""
+        create table if not exists events
+            id integer primary key autoincrement,
+            round_id integer references rounds,
+            time datetime,
+            type varchar(16),
+            data text,
+            subject_id varchar(16) null references players,
+            indirect_id varchar(16) null references players
         """)
 
 PLUGIN = None
@@ -115,6 +142,13 @@ def on_round_start(_):
 def on_round_end(event):
     global PLUGIN
     PLUGIN.end_round(event['winner'])
+
+@Event('player_hurt')
+def on_event(event):
+    global PLUGIN
+    subject_id = event['userid'] if 'userid' in event else None
+    indirect_id = event['attacker'] if 'attacker' in event else None
+    PLUGIN.add_event('player_hurt', event.variables.as_dict(), subject_id, indirect_id)
 
 def load():
     global PLUGIN
