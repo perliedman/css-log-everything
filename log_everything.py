@@ -146,9 +146,10 @@ def on_round_end(event):
 @Event('player_hurt')
 def on_event(event):
     global PLUGIN
-    subject_id = event['userid'] if 'userid' in event else None
-    indirect_id = event['attacker'] if 'attacker' in event else None
-    PLUGIN.add_event('player_hurt', event.variables.as_dict(), subject_id, indirect_id)
+    event_dict = event.variables.as_dict()
+    subject_id = event_dict['userid'] if 'userid' in event_dict else None
+    indirect_id = event_dict['attacker'] if 'attacker' in event_dict else None
+    PLUGIN.add_event('player_hurt', event_dict, subject_id, indirect_id)
 
 def load():
     global PLUGIN
