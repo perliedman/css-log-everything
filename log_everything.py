@@ -75,7 +75,9 @@ class LogEverythingPlugin(object):
         if self._round_id:
             cursor = self.connection.cursor()
             cursor.execute("""
-                insert into events (round_id, time, type, data, subject_id, indirect_id)
+                insert into events
+                    (round_id, time, type, data, subject_id, indirect_id)
+                    values (?, ?, ?, ?, ?, ?)
                 """, (self._round_id, datetime.now(), event_type, json.dumps(data),
                       self.users[subject] if subject else None,
                       self.users[indirect] if indirect else None))
