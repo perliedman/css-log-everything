@@ -97,14 +97,14 @@ def ensure_up_to_date(connection):
             name varchar(32))
         """)
     cursor.execute("""
-        create table if not exists events
+        create table if not exists `events` (
             id integer primary key autoincrement,
             round_id integer references rounds,
             time datetime,
             type varchar(16),
             data text,
             subject_id varchar(16) null references players,
-            indirect_id varchar(16) null references players
+            indirect_id varchar(16) null references players)
         """)
 
 PLUGIN = None
