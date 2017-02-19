@@ -5,7 +5,6 @@ from collections import defaultdict
 import json
 from datetime import datetime
 from filters.players import PlayerIter
-from players.helpers import playerinfo_from_edict
 
 class LogEverythingPlugin(object):
     def __init__(self, connection):
@@ -14,29 +13,28 @@ class LogEverythingPlugin(object):
         self.teams = defaultdict(list)
         self._round_start = None
 
-        for player in list(PlayerIter('all')):
-            user_id = player.userid
-            self.users[user_id] = {
-                'steam_id': player.steamid,
-                'name': player.name
-            }
-            self.teams[player.team].append(user_id)
-
-
-    def on_player_connect(self, event):
-        user_id = event['userid']
+    def add_player(self, user_id, steam_id, name):
         self.users[user_id] = {
-            'steam_id': event['networkid'],
-            'name': event['name']
+            'steam_id': steam_id,
+            'name': name
         }
 
-    def on_player_disconnect(self, event):
+        cursor = self.connection.cursor()
+        cursor.execute("""
+            insert or replace into players (steam_id, name) values (?,  ?)
+            """, (steam_id, name))
+
+    def remove_player(self, event):
         user_id = event['userid']
         del self.users[user_id]
 
-    def on_player_team(self, event):
-        user_id = event['userid']
-        old_team_id = event['oldteam']
+        for team in self.teams.values():
+            try:
+                team.remove(user_id)
+            except ValueError:
+                pass
+
+    def set_player_team(self, user_id, new_team_id, old_team_id=None):
         if old_team_id in self.teams:
             team = self.teams[old_team_id]
             try:
@@ -44,22 +42,20 @@ class LogEverythingPlugin(object):
             except ValueError:
                 pass
 
-        if not event['disconnect']:
-            new_team_id = event['team']
-            self.teams[new_team_id].append(user_id)
+        self.teams[new_team_id].append(user_id)
 
-    def on_round_start(self, _):
+    def start_round(self):
         self._round_start = datetime.now()
 
-    def on_round_end(self, event):
+    def end_round(self, winner_team_id):
         def team_to_json(team):
             return json.dumps([self.users[user_id]['steam_id'] for user_id in team])
 
         cursor = self.connection.cursor()
 
-        winner = event['winner']
-        win_team = self.teams[winner]
-        lose_team = [team for (team_number, team) in self.teams.items() if team_number != winner][0]
+        win_team = self.teams[winner_team_id]
+        lose_team = [team for (team_number, team) in self.teams.items() \
+            if team_number != winner_team_id][0]
         cursor.execute("""
             insert into rounds (starttime, endtime, win_team, lose_team) values (?, ?, ?, ?)""",
                        (self._round_start, datetime.now(),
@@ -69,7 +65,17 @@ class LogEverythingPlugin(object):
 def ensure_up_to_date(connection):
     cursor = connection.cursor()
     cursor.execute("""
-        create table if not exists rounds (starttime datetime, endtime datetime, win_team text, lose_team text)
+        create table if not exists rounds (
+            id integer primary key autoincrement,
+            starttime datetime,
+            endtime datetime,
+            win_team text,
+            lose_team text)
+        """)
+    cursor.execute("""
+        create table if not exists players (
+            steam_id varchar(16) primary key,
+            name varchar(32))
         """)
 
 PLUGIN = None
@@ -78,33 +84,48 @@ PLUGIN = None
 @Event('player_connect_client')
 def on_player_connect(event):
     global PLUGIN
-    PLUGIN.on_player_connect(event)
+    user_id = event['userid']
+    steam_id = event['networkid']
+    name = event['name']
+    PLUGIN.add_player(user_id, steam_id, name)
 
 @Event('player_disconnect')
 def on_player_disconnect(event):
     global PLUGIN
-    PLUGIN.on_player_disconnect(event)
+    PLUGIN.remove_player(event['userid'])
 
 @Event('player_team')
 def on_player_team(event):
     global PLUGIN
-    PLUGIN.on_player_team(event)
+    if not event['disconnect']:
+        user_id = event['userid']
+        new_team = event['team']
+        old_team = event['oldteam']
+
+        PLUGIN.set_player_team(user_id, new_team, old_team)
 
 @Event('round_start')
 def on_round_start(_):
     global PLUGIN
-    PLUGIN.on_round_start(_)
+    PLUGIN.start_round()
 
 @Event('round_end')
 def on_round_end(event):
     global PLUGIN
-    PLUGIN.on_round_end(event)
+    PLUGIN.end_round(event['winner'])
 
 def load():
     global PLUGIN
     connection = sqlite3.connect('log-everything.sqlite3')
     ensure_up_to_date(connection)
     PLUGIN = LogEverythingPlugin(connection)
+
+    for player in list(PlayerIter('all')):
+        user_id = player.userid
+        PLUGIN.add_player(user_id, player.steamid, player.name)
+        PLUGIN.set_player_team(user_id, player.team)
+
+
     SayText2('Log Everything plugin loaded.').send()
 
 def unload():
