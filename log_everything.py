@@ -79,8 +79,8 @@ class LogEverythingPlugin(object):
                     (round_id, time, type, data, subject_id, indirect_id)
                     values (?, ?, ?, ?, ?, ?)
                 """, (self._round_id, datetime.now(), event_type, json.dumps(data),
-                      self.users[subject] if subject else None,
-                      self.users[indirect] if indirect else None))
+                      self.users[subject]['steam_id'] if subject else None,
+                      self.users[indirect]['steam_id'] if indirect else None))
             self.connection.commit()
 
 def ensure_up_to_date(connection):
