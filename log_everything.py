@@ -53,14 +53,16 @@ class LogEverythingPlugin(object):
 
         cursor = self.connection.cursor()
 
-        win_team = self.teams[winner_team_id]
-        lose_team = [team for (team_number, team) in self.teams.items() \
-            if team_number != winner_team_id][0]
-        cursor.execute("""
-            insert into rounds (starttime, endtime, win_team, lose_team) values (?, ?, ?, ?)""",
-                       (self._round_start, datetime.now(),
-                        team_to_json(win_team), team_to_json(lose_team)))
-        self.connection.commit()
+        # If it's a draw, winner_team_id will be something weird
+        if winner_team_id in self.teams:
+            win_team = self.teams[winner_team_id]
+            lose_team = [team for (team_number, team) in self.teams.items() \
+                if team_number != winner_team_id][0]
+            cursor.execute("""
+                insert into rounds (starttime, endtime, win_team, lose_team) values (?, ?, ?, ?)""",
+                           (self._round_start, datetime.now(),
+                            team_to_json(win_team), team_to_json(lose_team)))
+            self.connection.commit()
 
 def ensure_up_to_date(connection):
     cursor = connection.cursor()
