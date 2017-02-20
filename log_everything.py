@@ -145,13 +145,42 @@ def on_round_end(event):
     global PLUGIN
     PLUGIN.end_round(event['winner'])
 
+@Event('bomb_abortdefuse')
+@Event('bomb_abortplant')
+@Event('bomb_begindefuse')
+@Event('bomb_beginplant')
+@Event('bomb_defused')
+@Event('bomb_dropped')
+@Event('bomb_exploded')
+@Event('bomb_pickup')
+@Event('bomb_planted')
+@Event('break_breakable')
+@Event('break_prop')
+@Event('flashbang_detonate')
+@Event('hegrenade_detonate')
+@Event('item_pickup')
+@Event('player_avenged_teammate')
+@Event('player_blind')
+@Event('player_death')
+@Event('player_decal')
+@Event('player_falldamage')
 @Event('player_hurt')
+@Event('player_jump')
+@Event('player_radio')
+@Event('player_shoot')
+@Event('player_use')
+@Event('round_mvp')
+@Event('smokegrenade_detonate')
+@Event('weapon_fire')
+@Event('weapon_fire_on_empty')
+@Event('weapon_reload')
+@Event('weapon_zoom')
 def on_event(event):
     global PLUGIN
     event_dict = event.variables.as_dict()
     subject_id = event_dict['userid'] if 'userid' in event_dict else None
     indirect_id = event_dict['attacker'] if 'attacker' in event_dict else None
-    PLUGIN.add_event('player_hurt', event_dict, subject_id, indirect_id)
+    PLUGIN.add_event(event.name, event_dict, subject_id, indirect_id)
 
 def load():
     global PLUGIN
