@@ -25,8 +25,7 @@ class LogEverythingPlugin(object):
             insert or replace into players (steam_id, name) values (?,  ?)
             """, (steam_id, name))
 
-    def remove_player(self, event):
-        user_id = event['userid']
+    def remove_player(self, user_id):
         del self.users[user_id]
 
         for team in self.teams.values():
