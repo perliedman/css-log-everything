@@ -53,7 +53,8 @@ class LogEverythingPlugin(object):
 
     def end_round(self, winner_team_id):
         def team_to_json(team):
-            return json.dumps([self.users[user_id]['steam_id'] for user_id in team])
+            return json.dumps([self.users[user_id]['steam_id'] for user_id in team \
+                if user_id in self.users])
 
         cursor = self.connection.cursor()
 
