@@ -11,7 +11,7 @@ class LogEverythingPlugin(object):
     def __init__(self, connection):
         self.connection = connection
         self.users = {}
-        self.teams = defaultdict(list)
+        self.teams = defaultdict(set)
         self._round_id = None
 
     def add_player(self, user_id, steam_id, name):
@@ -28,10 +28,12 @@ class LogEverythingPlugin(object):
     def remove_player(self, user_id):
         del self.users[user_id]
 
-        for team in self.teams.values():
+        for team_id, team in self.teams.items():
             try:
                 team.remove(user_id)
-            except ValueError:
+                msg = 'Removed player %s from team %d' % (self.users[user_id]['name'], team_id)
+                SayText2(msg).send()
+            except KeyError:
                 pass
 
     def set_player_team(self, user_id, new_team_id, old_team_id=None):
@@ -39,10 +41,17 @@ class LogEverythingPlugin(object):
             team = self.teams[old_team_id]
             try:
                 team.remove(user_id)
-            except ValueError:
-                pass
+                msg = 'Removed player %s from team %d' % (self.users[user_id]['name'], old_team_id)
+                SayText2(msg).send()
+            except KeyError, ex:
+                msg = 'Failed to remove player %s from team %d: %s' % \
+                    (self.users[user_id]['name'], old_team_id, str(ex))
+                SayText2(msg).send()
 
-        self.teams[new_team_id].append(user_id)
+        self.teams[new_team_id].add(user_id)
+        msg = 'Added player %s to team %d.' % \
+            (self.users[user_id]['name'], old_team_id)
+        SayText2(msg).send()
 
     def start_round(self):
         cursor = self.connection.cursor()
