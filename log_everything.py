@@ -59,6 +59,7 @@ class LogEverythingPlugin(object):
             insert into rounds (starttime) values (?)""",
                        (datetime.now(),))
         self._round_id = cursor.lastrowid
+        self.teams = defaultdict(set)
 
     def end_round(self, winner_team_id):
         def team_to_json(team):
