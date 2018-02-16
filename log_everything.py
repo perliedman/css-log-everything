@@ -43,7 +43,7 @@ class LogEverythingPlugin(object):
                 team.remove(user_id)
                 msg = 'Removed player %s from team %d' % (self.users[user_id]['name'], old_team_id)
                 SayText2(msg).send()
-            except KeyError, ex:
+            except KeyError as ex:
                 msg = 'Failed to remove player %s from team %d: %s' % \
                     (self.users[user_id]['name'], old_team_id, str(ex))
                 SayText2(msg).send()
